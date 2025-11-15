@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>Music Library</title>
+  <style>
+    body { font-family: Arial; padding: 20px; }
+    input, button { padding: 8px; margin: 5px; }
+    .track { margin: 10px 0; padding: 10px; border: 1px solid #ccc; }
+  </style>
+</head>
+<body>
+  <h1>Music Library</h1>
+
+  <div id="auth">
+    <h2>Register</h2>
+    <input id="regEmail" placeholder="Email" />
+    <input id="regPass" placeholder="Password" type="password" />
+    <input id="regName" placeholder="Name" />
+    <button onclick="register()">Register</button>
+
+    <h2>Login</h2>
+    <input id="logEmail" placeholder="Email" />
+    <input id="logPass" placeholder="Password" type="password" />
+    <button onclick="login()">Login</button>
+  </div>
+
+  <div id="app" style="display:none;">
+    <h2>Upload music</h2>
+    <input id="title" placeholder="Title" />
+    <input id="file" type="file" />
+    <button onclick="upload()">Upload</button>
+
+    <h2>Tracks</h2>
+    <div id="tracks"></div>
+  </div>
+
+<script>
+let token = localStorage.getItem('token');
+if(token) init();
+
+function register(){
+  fetch('/api/register', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({email:regEmail.value, password:regPass.value, displayName:regName.value})
+  }).then(r=>r.json()).then(d=>alert(JSON.stringify(d)));
+}
+
+function login(){
+  fetch('/api/login', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({email:logEmail.value, password:logPass.value})
+  }).then(r=>r.json()).then(d=>{
+    if(d.token){ localStorage.setItem('token', d.token); token=d.token; init(); }
+    else alert(d.error);
+  });
+}
+
+function init(){
+  auth.style.display='none';
+  app.style.display='block';
+  loadTracks();
+}
+
+function upload(){
+  const fd = new FormData();
+  fd.append('title', title.value);
+  fd.append('file', file.files[0]);
+
+  fetch('/api/upload', {
+    method:'POST', headers:{'Authorization':'Bearer '+token}, body:fd
+  }).then(r=>r.json()).then(loadTracks);
+}
+
+function del(id){
+  fetch('/api/tracks/'+id, {
+    method:'DELETE', headers:{'Authorization':'Bearer '+token}
+  }).then(r=>r.json()).then(loadTracks);
+}
+
+function loadTracks(){
+  fetch('/api/tracks').then(r=>r.json()).then(list=>{
+    tracks.innerHTML='';
+    list.forEach(t=>{
+      tracks.innerHTML+=`
+        <div class='track'>
+          <b>${t.title}</b> (${t.uploader})<br>
+          <audio controls src="/uploads/${t.filename}"></audio><br>
+          <a href="/uploads/${t.filename}" download>Download</a>
+          <button onclick="del(${t.id})">Delete</button>
+        </div>`;
+    });
+  });
+}
+</script>
+
+</body>
+</html>
