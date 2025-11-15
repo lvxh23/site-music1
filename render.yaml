@@ -5,5 +5,5 @@ services:
     plan: free
     branch: main
     buildCommand: "npm install"
-    startCommand: "node server.js"
+    startCommand: "npm start"
     repo: YOUR_GITHUB_USERNAME/YOUR_REPO_NAME
